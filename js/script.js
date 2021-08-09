@@ -21,7 +21,8 @@
         let traverse = parseInt(slider.attr('data-traverse'));
         let is_moving = false;
         let mostRight = false;
-
+        let scaleToHide_flag = false;
+        
 
         // Calc viewPort width & height
         function calcViewport() {
@@ -43,9 +44,28 @@
 
         $(window).on("resize", calcViewport);
 
-        $(".strip-item").wrap("<div class=img-wrapper></div>");
+        // math functions
+        const mathFuncs = {
+            // Linear Interpolation equation
+            lerp: (v0, v1, t) => {
+                return (1 - t) * v0 + t * v1;
+            },
+
+            // distance between 2 points
+            distance: (x1, y1, x2, y2) => {
+                let dx = x1 - x2;
+                let dy = y1 - y2;
+
+                return Math.sqrt(dx * dx + dy * dy);
+            },
+
+            // random number generator 
+            getRandom: (min, max) => (Math.random() * (max - min) + min).toFixed(2)
+        };
+
+        strip_item.wrap("<div class=img-wrapper></div>");
         // Setting the width of the slider by calculating all the width of the images
-        $(".strip-item").each(function (index, element) {
+        strip_item.each(function (index, element) {
             let ImgWidth = $(this).outerWidth();
             $(this).attr('data-width', ImgWidth);
             sliderWidth += ImgWidth;
@@ -74,10 +94,11 @@
                 return false;
             }
         });
-
+        strip_item_link.on("mousedown", function (event){
+            event.stopPropagation();
+        });
         strip_item_link.on('mouseenter', function () {
             $(this).siblings().css({display:"block"});
-            console.log("hover");
             let slideOut = false;
             let slideIn = false;
             let element = $(this).find('span');
@@ -88,10 +109,8 @@
                 easing: 'easeOutQuad',
                 complete: function() {
                     slideOut = true;
-                    console.log("slideOut",slideOut);
                     if (slideOut == true) {
                         slideIn = true;
-                        console.log("enter state");
                         element.css({
                             y: '100%',
                             opacity: 0,
@@ -107,7 +126,7 @@
                             complete:function() { 
                                 slideIn = false;
                                 slideOut = false;
-                             }
+                            }
                         })
                     }
                 }
@@ -122,8 +141,15 @@
                 y: '0%',
                 opacity: 1,
             })
-         });
+        });
+        strip_item_link.on('click', function (ev) {
+            ev.preventDefault();
+            scaleToHide();
+            iterateOverStripItem();
+        }); 
+
         // Main Functions 
+
         // MouseDown Drag function 
         function mousedown_drag(drag_event,project_selector,project_selector_s,slider,image_selector_s) {
 
@@ -148,7 +174,7 @@
                 //     data_traverse = parseInt(slider.attr('data-traverse')),
                 //     prjcts_length = project_selector.length ;
                 scaleCover();
-                scaling();
+                scaleToDrag();
                 mousemove_drag ();
                 mouseup_drag();
                 // mouseup_drag(project_selector_s,slider,image_selector_s,prjcts_length,data_traverse,current_project_active,current_active_project_index,current_active_project_height,active_img,first_img,last_img,first_prjct,last_prjct,threshold);
@@ -231,7 +257,7 @@
 
 
         // Scaling the Images and containers of images
-        function scaling() {
+        function scaleToDrag() {
             strip_item.stopTransition();
             image.stopTransition();
             strip_item.transition({
@@ -286,6 +312,41 @@
                     duration:500,
                 })
             }
+        }
+
+        // Animate strip-item
+        function scaleToHide() {
+            scaleToHide_flag = true;
+            strip_item.transition({
+                scale: 0.8,
+                opacity: 0.4,
+                duration: 800,
+                easing: 'easeOutCubic',
+            });
+            image.transition({
+                scale: 1.6,
+                duration: 800,
+                easing: 'easeOutCubic',
+            });
+            
+        }
+        function iterateOverStripItem() {  
+            if (scaleToHide_flag) {
+                scaleToHide_flag = false;
+                let selectedItem ;
+                strip_item.parent().each(function (index, element) {
+                    selectedItem = $(this);
+                    translateUpToHide($(this));
+                });
+            }
+        }
+        function translateUpToHide(item){
+            item.transition({
+                y:windowHeight*-1,
+                delay: parseInt(mathFuncs.getRandom(200,400)),
+                duration: 1000,
+                easing: 'easeInOutExpo',
+            });
         }
         // MouseMove Drag function 
         function mousemove_drag () {
