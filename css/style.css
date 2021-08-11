@@ -248,7 +248,7 @@ main {
 }
 
 .content {
-    transform: translateY(100%);
+    /* transform: translateY(100%); */
     top: 0;
     left: 0;
     pointer-events: none;
@@ -303,7 +303,7 @@ main {
     bottom: 1.5rem;
     left: 3rem;
     cursor: pointer;
-    
+    opacity: 0;
 }
 
 .content_item_current ~ .content_close {

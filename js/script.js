@@ -9,6 +9,11 @@
         const image = $('.gallery .strip-item .img-inner');
         const imageSelector_s = '.img-inner';
         const strip_item_link = $('.strip_item_link');
+        const contentItem = $('.content_item');
+        const contentImage = $('.content_item .img-outer');
+        const contentTitle = $('.content_item_title');
+        const contetText = $('.content_item_text');
+        const closeArrow = $('.content_close');
         let windowWidth;
         let windowHeight;
         let is_animating = false;
@@ -143,10 +148,13 @@
             })
         });
         strip_item_link.on('click', function (ev) {
-            ev.preventDefault();
             is_animating = true;
-            scaleToHide();
-            iterateOverStripItem();
+            let clickedElementIndex = $(this).parentsUntil( $(".gallery") , ".img-wrapper" ).index();
+            ev.preventDefault();
+            scaleStripItemToHide();
+            iterateOverStripItems();
+            showContentItem(clickedElementIndex);
+            is_animating = false;
         }); 
 
         // Main Functions 
@@ -193,7 +201,6 @@
                 duration: 500,
             })
         }
-
 
         // Scaling the Images and containers of images
         function scaleToDrag() {
@@ -254,7 +261,7 @@
         }
 
         // Animate strip-item
-        function scaleToHide() {
+        function scaleStripItemToHide() {
             scaleToHide_flag = true;
             strip_item.transition({
                 scale: 0.8,
@@ -269,17 +276,17 @@
             });
             
         }
-        function iterateOverStripItem() {  
+        function iterateOverStripItems() {  
             if (scaleToHide_flag) {
-                scaleToHide_flag = false;
+                // scaleToHide_flag = false;
                 let selectedItem ;
                 strip_item.parent().each(function (index, element) {
                     selectedItem = $(this);
-                    translateUpToHide($(this));
+                    translateUpStripItemToHide($(this));
                 });
             }
         }
-        function translateUpToHide(item){
+        function translateUpStripItemToHide(item){
             item.transition({
                 y:windowHeight*-1,
                 delay: parseInt(mathFuncs.getRandom(200,400)),
@@ -287,6 +294,57 @@
                 easing: 'easeInOutExpo',
             });
         }
+
+        // Show content item
+        function showContentItem(contentItem_index) {
+            if (scaleToHide_flag) {
+                let selectedContentItem = $('.content_item').eq(contentItem_index).addClass('content_item_current');
+                selectedContentItem.find('.img-outer').css({
+                    y: windowHeight*1.3,
+                    opacity: 1,
+                });
+                selectedContentItem.find('.content_item_title').css({
+                    y: '100vh',
+                });
+                selectedContentItem.find('.content_item_text').css({
+                    y: '200vh',
+                });
+                closeArrow.css({
+                    y: '50vh',
+                })
+                selectedContentItem.find('.img-outer').transition({
+                    y: 0,
+                    duration: 1000,
+                    delay: 600,
+                    easing: 'easeInOutExpo',
+                });
+                selectedContentItem.find('.content_item_title').transition({
+                    y: 0,
+                    opacity: 1,
+                    duration: 800,
+                    delay: 1000,
+                    easing: 'easeOutQuint',
+                });
+                selectedContentItem.find('.content_item_text').transition({
+                    y: 0,
+                    opacity: 1,
+                    duration: 800,
+                    delay: 1000,
+                    easing: 'easeOutQuint',
+                });
+                closeArrow.transition({
+                    y: 0,
+                    opacity: 1,
+                    duration: 800,
+                    delay: 1000,
+                    easing: 'easeOutQuint',
+                    complete: function () {
+                        is_animating = false;
+                    }
+                })
+            }  
+        }   
+
         // MouseMove Drag function 
         function mousemove_drag () {
 
