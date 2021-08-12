@@ -27,6 +27,7 @@
         let is_moving = false;
         let mostRight = false;
         let scaleToHide_flag = false;
+        let hideContentItem_flag = false;
         
 
         // Calc viewPort width & height
@@ -152,10 +153,15 @@
             let clickedElementIndex = $(this).parentsUntil( $(".gallery") , ".img-wrapper" ).index();
             ev.preventDefault();
             scaleStripItemToHide();
-            iterateOverStripItems();
+            iterateOverStripItemsToHide();
             showContentItem(clickedElementIndex);
-            is_animating = false;
         }); 
+        closeArrow.on('click', function (ev) {  
+            let showedContentItem = $('.content_item.content_item_current');
+            ev.preventDefault();
+            hideContentItem(showedContentItem);
+            iterateOverStripItemsToShow();
+        })
 
         // Main Functions 
 
@@ -276,17 +282,17 @@
             });
             
         }
-        function iterateOverStripItems() {  
+        function iterateOverStripItemsToHide() {  
             if (scaleToHide_flag) {
                 // scaleToHide_flag = false;
                 let selectedItem ;
                 strip_item.parent().each(function (index, element) {
                     selectedItem = $(this);
-                    translateUpStripItemToHide($(this));
+                    translateStripItemUp($(this));
                 });
             }
         }
-        function translateUpStripItemToHide(item){
+        function translateStripItemUp(item){
             item.transition({
                 y:windowHeight*-1,
                 delay: parseInt(mathFuncs.getRandom(200,400)),
@@ -345,6 +351,65 @@
             }  
         }   
 
+        function hideContentItem(contentItem_index) {
+            if (is_animating) {
+                return false;
+            }
+            is_animating = true;
+            hideContentItem_flag = true;
+            strip_item.css({
+                scale: 1,
+                opacity: 1,
+            });
+            image.css({
+                scale: 1,
+            });
+            contentItem_index.find('.content_item_text').transition({
+                y: '200vh',
+                opacity: 0,
+                duration: 800,
+                easing: 'easeInQuint',
+            });
+            contentItem_index.find('.content_item_title').transition({
+                y: '100vh',
+                opacity: 0,
+                duration: 800,
+                easing: 'easeInQuint',
+            });
+            closeArrow.transition({
+                y: '50vh',
+                opacity: 0,
+                duration: 800,
+                delay: 200,
+                easing: 'easeOutQuint',
+            });
+            contentItem_index.find('.img-outer').transition({
+                y: windowHeight*1.3,
+                opacity: 1,
+                duration: 1000,
+                delay: 200,
+                easing: 'easeInOutExpo',
+                complete: function() {
+                    contentItem_index.removeClass('content_item_current');
+                }
+            });
+        }
+        function iterateOverStripItemsToShow() {
+            if (hideContentItem_flag) {
+                strip_item.parent().each(function (index, element) {
+                    translateStripItemDown($(this));
+                });
+            }
+        }
+        function translateStripItemDown(item) {
+            item.transition({
+                y: '-50%',
+                delay: parseInt(mathFuncs.getRandom(400,600)),
+                duration: parseInt(mathFuncs.getRandom(600,900)),
+                easing: 'easeInOutExpo',
+            });
+        }
+        
         // MouseMove Drag function 
         function mousemove_drag () {
 
