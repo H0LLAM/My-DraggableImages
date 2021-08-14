@@ -13,20 +13,50 @@
         let windowHeight;
         let is_animating = false;
 	    let dragStart;
-	    let dragEnd;			    
+        const referencePoint = 0; 
+	    let dragEndAbsolute;			    
 	    let abs_drag= 0;
+        let relative_drag = 0;
         let arrayImgs = [];
         let arrayImgsLength ;
         let sliderWidth = 0;
         let traverse = parseInt(slider.attr('data-traverse'));
         let is_moving = false;
         let mostRight = false;
+        let dragPosition = 0;
+        let maxDrag = 0;
+        let traveledDistance;
 
+        const mathFuncs = {
+            lineEq: (y2, y1, x2, x1, currentVal) => {
+                // y = mx + b 
+                var m = (y2 - y1) / (x2 - x1), b = y1 - m * x1;
+                return m * currentVal + b;
+            },
+            lerp: (a, b, n) => (1 - n) * a + n * b,
+            getRandomFloat: (min, max) => (Math.random() * (max - min) + min).toFixed(2)
+        };
+
+        $(".strip-item").wrap("<div class=img-wrapper></div>");
+        // Setting the width of the slider by calculating all the width of the images
+        $(".strip-item").each(function (index, element) {
+            let ImgWidth = $(this).outerWidth();
+            $(this).attr('data-width', ImgWidth);
+            sliderWidth += ImgWidth;
+            arrayImgs.push($(this));
+        });
+
+        function getmaxDrag(window_width) {  
+            maxDrag = (sliderWidth < window_width) ? 0 : (sliderWidth - window_width);
+            console.log("sliderWidth",sliderWidth);
+            console.log("maxDrag",maxDrag);
+        }
 
         // Calc viewPort width & height
         function calcViewport() {
-            windowWidth= $(window).width();
-		    windowHeight= $(window).height();
+            windowWidth= window.innerWidth;
+		    windowHeight= window.innerHeight;
+            getmaxDrag(windowWidth);
         }
 
         function debounce(fun, ms) {
@@ -38,22 +68,17 @@
         }
 
         calcViewport = debounce(calcViewport, 500);
-
+        
         calcViewport();
 
         $(window).on("resize", calcViewport);
 
-        $(".strip-item").wrap("<div class=img-wrapper></div>");
-        // Setting the width of the slider by calculating all the width of the images
-        $(".strip-item").each(function (index, element) {
-            let ImgWidth = $(this).outerWidth();
-            $(this).attr('data-width', ImgWidth);
-            sliderWidth += ImgWidth;
-            arrayImgs.push($(this));
-        });
-
         // Length of array of images
         arrayImgsLength = arrayImgs.length;
+
+        // maxDrag = sliderWidth < windowWidth ? 0 : sliderWidth - windowWidth;
+        // console.log("maxDrag",maxDrag);
+        
 
         // Events
         slider.on("mousedown", function (event) {
@@ -68,7 +93,7 @@
 
             let result = detectLeftMouse(event); 
             if (result == 1) {
-                mousedown_drag(event,strip_item,strip_item_s,slider,imageSelector_s);
+                mousedown_drag(event);
             }
             else {
                 return false;
@@ -77,7 +102,6 @@
 
         strip_item_link.on('mouseenter', function () {
             $(this).siblings().css({display:"block"});
-            console.log("hover");
             let slideOut = false;
             let slideIn = false;
             let element = $(this).find('span');
@@ -107,7 +131,7 @@
                             complete:function() { 
                                 slideIn = false;
                                 slideOut = false;
-                             }
+                            }
                         })
                     }
                 }
@@ -122,20 +146,22 @@
                 y: '0%',
                 opacity: 1,
             })
-         });
+        });
+
         // Main Functions 
+        
         // MouseDown Drag function 
-        function mousedown_drag(drag_event,project_selector,project_selector_s,slider,image_selector_s) {
+        function mousedown_drag(mouseDownEvent) {
 
             if ( !is_moving && !(slider.hasClass('dragged')) ) {
 
                 is_moving = true;
-                dragStart = 0;
-                dragEnd  = 0;
-                abs_drag = 0;
-                drag_event.preventDefault(); 
-                //  || drag_event.originalEvent.touches[0].pageX
-                dragStart = drag_event.pageX;
+                // dragStart = 0;
+                // dragEndAbsolute  = 0;
+                // abs_drag = 0;
+                mouseDownEvent.preventDefault(); 
+                //  || mouseDownEvent.originalEvent.touches[0].pageX
+                dragStart = mouseDownEvent.pageX;
 
                 // var	current_project_active = $(project_selector_s+'.active'),
                 //     current_active_project_index = current_project_active.index(),
@@ -154,6 +180,73 @@
                 // mouseup_drag(project_selector_s,slider,image_selector_s,prjcts_length,data_traverse,current_project_active,current_active_project_index,current_active_project_height,active_img,first_img,last_img,first_prjct,last_prjct,threshold);
             } 
         }
+        
+        // MouseMove Drag function 
+        function mousemove_drag () {
+
+            slider.on('mousemove touchmove', function(m){
+
+                // m.originalEvent.touches[0].pageX issue
+                dragEndAbsolute = m.pageX;
+                abs_drag = dragPos();
+                // console.log("abs_drag",abs_drag);
+                relative_drag = dragRelativePos();
+                // console.log("absolute drag",abs_drag);
+                // console.log("relative_drag",relative_drag);
+                // console.log("relative drag",relative_drag);
+                // if (abs_drag > 5 || abs_drag < -5) {
+                    slider.addClass('dragged');
+                // } 
+                if ($(this).css('translate') !== 0) {
+                    traveledDistance = $(this).css('translate');
+                    traveledDistance = parseInt(traveledDistance.substring(0, traveledDistance.indexOf("px")));
+                }
+                console.log("traveledDistance",traveledDistance);
+                // console.log("maxDrag",maxDrag);
+                if (traveledDistance >= 0) {
+                    // console.log("drag +");
+                    dragPosition = mathFuncs.lineEq(0.5*windowWidth,0, windowWidth, 0, abs_drag); 
+                    $(this).css({x:traverse+dragPosition+'px',y:'-50%'});
+                }
+                else if (traveledDistance < -1*maxDrag) {
+                    // console.log("drag -");
+                    dragPosition = mathFuncs.lineEq(0.5*windowWidth,0, maxDrag+windowWidth, maxDrag, abs_drag);
+                    console.log("dragPosition",dragPosition);
+                    $(this).css({x:traverse+abs_drag+'px',y:'-50%'});
+                }
+                else {
+                    // console.log("drag");
+                    dragPosition = abs_drag;
+                    $(this).css({x:traverse+dragPosition+'px',y:'-50%'});
+                }
+                
+            })
+        }
+
+        // MouseUp Drag function
+        function mouseup_drag (){
+            
+            $(document).on('mouseup touchend', function(){
+                traverse = parseInt(slider.css('translate')); 
+                slider.attr('data-traverse',traverse);
+                slider.off('mousemove touchmove');
+                slider.removeClass('dragged');
+                is_moving = false;
+                if (!is_moving) {
+                    $(document).off('mouseup touchend');				
+                }
+                let offset = slider.offset();
+                let top = offset.top;
+                let left = offset.left;
+                let right = ($(window).width() - (left + slider.outerWidth()));
+                // let testtt = slider[0].getBoundingClientRect().right;
+                
+                maxLimit(left,right);
+                
+                resetToNormal();
+            });
+            
+        }
 
         // Sub Functions
 
@@ -166,7 +259,6 @@
                 duration: 500,
             })
         }
-
 
         // Scaling the Images and containers of images
         function scaling() {
@@ -225,74 +317,7 @@
                 })
             }
         }
-        // MouseMove Drag function 
-        function mousemove_drag () {
-
-            slider.on('mousemove touchmove', function(m){
-
-                // m.originalEvent.touches[0].pageX issue
-                dragEnd = m.pageX;
-                abs_drag = dragPos();
-                // if (abs_drag > 5 || abs_drag < -5) {
-                    slider.addClass('dragged');
-                // } 
-                $(this).css({x:traverse+abs_drag+'px',y:'-50%'});
-            })
-        }
-
-        // MouseUp Drag function
-        function mouseup_drag (){
-            
-            $(document).on('mouseup touchend', function(){
-                traverse = parseInt(slider.css('translate')); 
-                slider.attr('data-traverse',traverse);
-                slider.off('mousemove touchmove');
-                slider.removeClass('dragged');
-                is_moving = false;
-                if (!is_moving) {
-                    $(document).off('mouseup touchend');				
-                }
-                let offset = slider.offset();
-                let top = offset.top;
-                let left = offset.left;
-                let right = ($(window).width() - (left + slider.outerWidth()));
-                // let testtt = slider[0].getBoundingClientRect().right;
-                
-                maxLimit(left,right);
-                
-                resetToNormal();
-                // if ( ((abs_drag < threshold) && (abs_drag > -threshold)) ||
-                //     (current_active_project_index == 0 && abs_drag >= threshold) ||
-                //     (current_active_project_index == (prjcts_length -1)  && abs_drag <= -threshold) ) {
-
-                //     back_to_original(slider,data_traverse);
-                // } 
-                // else if (abs_drag >= threshold || abs_drag <= -threshold) { 	
-
-                //     locate_drag(abs_drag,project_selector_s,slider,image_selector_s,prjcts_length,data_traverse,current_project_active,current_active_project_index,current_active_project_height,active_img,first_img,last_img,first_prjct,last_prjct);
-                // }
-            });
-            
-        }
-        // MouseUp Drag function 
-        // function mouseup_drag (project_selector_s,slider,image_selector_s,prjcts_length,data_traverse,current_project_active,current_active_project_index,current_active_project_height,active_img,first_img,last_img,first_prjct,last_prjct,threshold){
-
-        //     $(document).on('mouseup touchend', function(){
-        //         slider.off('mousemove touchmove');
-        //         slider.removeClass('dragged');
-        //         if ( ((abs_drag < threshold) && (abs_drag > -threshold)) ||
-        //             (current_active_project_index == 0 && abs_drag >= threshold) ||
-        //             (current_active_project_index == (prjcts_length -1)  && abs_drag <= -threshold) ) {
-
-        //             back_to_original(slider,data_traverse);
-        //         } 
-        //         else if (abs_drag >= threshold || abs_drag <= -threshold) { 	
-
-        //             locate_drag(abs_drag,project_selector_s,slider,image_selector_s,prjcts_length,data_traverse,current_project_active,current_active_project_index,current_active_project_height,active_img,first_img,last_img,first_prjct,last_prjct);
-        //         }
-        //     });				
-        // }
-
+        
         // Adjust To Original By Drag
         function back_to_original (slider,reference) {
 
@@ -305,106 +330,14 @@
                     $(document).off('mouseup touchend');
                 }
             })
-        }			
-
-        // Detect location of drag
-        function locate_drag (abs_drag,project_selector_s,slider,image_selector_s,prjcts_length,data_traverse,current_project_active,current_active_project_index,current_active_project_height,active_img,first_img,last_img,first_prjct,last_prjct){
-
-            var traverse = 0,
-                project_heights = 0,
-                counter_i = 0;
-
-            if (abs_drag > 0) {
-
-                abs_drag = abs_drag - (current_active_project_height / 2);
-
-                for (var i = current_active_project_index  ; i > 0 ; i--) {
-
-                    counter_i = i-1;
-
-                    var	current_projcet = $(project_selector_s+':eq('+counter_i+')'),
-                        current_projcet_height = current_projcet.innerHeight(),
-                        next_current_project = current_projcet.next(),
-                        next_current_project_height = next_current_project.innerHeight(),
-                        current_img = $(image_selector_s+':eq('+counter_i+')');
-
-                    project_heights += current_projcet_height;
-                    traverse += (current_projcet_height / 2) + (next_current_project_height / 2);
-
-                    if (project_heights >= abs_drag) {
-                        center_active(slider,traverse,data_traverse);
-                        current_project_active.removeClass('active');
-                        current_projcet.addClass('active');
-                        active_img.removeClass('active');
-                        current_img.addClass('active');
-                        return false;
-                    }
-                    else if (abs_drag > project_heights && i == 1 ) {
-                        center_active(slider,traverse,data_traverse);
-                        current_project_active.removeClass('active');
-                        first_prjct.addClass('active');
-                        active_img.removeClass('active');
-                        first_img.addClass('active');
-                        return false;
-                    }
-                }
-            }	
-            else {
-
-                abs_drag = abs_drag + (current_active_project_height / 2);
-
-                for (var i = current_active_project_index ; i < prjcts_length-1 ; i++) {
-
-                    counter_i = i+1;
-
-                    var	current_projcet = $(project_selector_s+':eq('+counter_i+')'),
-                        current_projcet_height = current_projcet.innerHeight(),
-                        prev_current_project = current_projcet.prev(),
-                        prev_current_project_height = prev_current_project.innerHeight(),
-                        current_img = $(image_selector_s+':eq('+counter_i+')');								
-
-                    project_heights -= current_projcet_height;
-                    traverse += (-current_projcet_height / 2) + (-prev_current_project_height / 2);
-
-                    if (project_heights <= abs_drag) {
-                        center_active(slider,traverse,data_traverse);
-                        current_project_active.removeClass('active');
-                        current_projcet.addClass('active');
-                        active_img.removeClass('active');
-                        current_img.addClass('active');
-                        return false;
-                    }
-                    else if (abs_drag < project_heights && i == prjcts_length-2 ) {
-                        center_active(slider,traverse,data_traverse);
-                        current_project_active.removeClass('active');
-                        last_prjct.addClass('active');
-                        active_img.removeClass('active');
-                        last_img.addClass('active');
-                        return false;											
-                    }
-                }					
-            }				
-        }		
-							
-        // Center Active project By Drag 
-        function center_active (selector,traverse,data_traverse) {
-
-            selector.transition({
-                y:traverse+data_traverse,
-                duration:700,
-                easing:'ease',
-                complete: function() {
-                    data_traverse += traverse;
-                    selector.attr('data-traverse', data_traverse);	
-                    is_moving = false;
-                    $(document).off('mouseup touchend');
-                }
-            })								
-        }
+        }					    
 
         // Calc the delta distance of gallery traversed by drag
         function dragPos() {
-            return dragEnd - dragStart;
+            return dragEndAbsolute - dragStart;
+        }
+        function dragRelativePos() {
+            return dragEndAbsolute - referencePoint;
         }
 
         
