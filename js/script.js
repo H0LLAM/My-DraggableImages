@@ -370,7 +370,7 @@
         function translateStripItemUp(item){
             item.transition({
                 y:windowHeight*-1,
-                delay: parseInt(mathFuncs.getRandom(200,400)),
+                delay: parseInt(mathFuncs.getRandomFloat(200,400)),
                 duration: 1000,
                 easing: 'easeInOutExpo',
             });
@@ -479,8 +479,8 @@
         function translateStripItemDown(item) {
             item.transition({
                 y: '-50%',
-                delay: parseInt(mathFuncs.getRandom(400,600)),
-                duration: parseInt(mathFuncs.getRandom(600,900)),
+                delay: parseInt(mathFuncs.getRandomFloat(400,600)),
+                duration: parseInt(mathFuncs.getRandomFloat(600,900)),
                 easing: 'easeInOutExpo',
             });
         }
