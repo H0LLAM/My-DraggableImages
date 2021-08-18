@@ -48,8 +48,9 @@
 
         function getmaxDrag(window_width) {  
             maxDrag = (sliderWidth < window_width) ? 0 : (sliderWidth - window_width);
-            console.log("sliderWidth",sliderWidth);
-            console.log("maxDrag",maxDrag);
+            // console.log("sliderWidth",sliderWidth);
+            // console.log("maxDrag",maxDrag);
+            // console.log("window_width",window_width);
         }
 
         // Calc viewPort width & height
@@ -202,17 +203,17 @@
                     traveledDistance = parseInt(traveledDistance.substring(0, traveledDistance.indexOf("px")));
                 }
                 console.log("traveledDistance",traveledDistance);
-                // console.log("maxDrag",maxDrag);
                 if (traveledDistance >= 0) {
                     // console.log("drag +");
                     dragPosition = mathFuncs.lineEq(0.5*windowWidth,0, windowWidth, 0, abs_drag); 
                     $(this).css({x:traverse+dragPosition+'px',y:'-50%'});
                 }
                 else if (traveledDistance < -1*maxDrag) {
-                    // console.log("drag -");
-                    dragPosition = mathFuncs.lineEq(0.5*windowWidth,0, maxDrag+windowWidth, maxDrag, abs_drag);
+                    console.log("drag -");
+                    console.log("window_width",sliderWidth);
+                    dragPosition = mathFuncs.lineEq(0.5*windowWidth,0, sliderWidth, windowWidth, abs_drag);
                     console.log("dragPosition",dragPosition);
-                    $(this).css({x:traverse+abs_drag+'px',y:'-50%'});
+                    $(this).css({x:traverse+dragPosition+'px',y:'-50%'});
                 }
                 else {
                     // console.log("drag");
